@@ -305,6 +305,30 @@ void sign_transaction(signed_transaction& trx, fc::variant& required_keys, const
    trx = signed_trx.as<signed_transaction>();
 }
 
+bool verify_signature2() {
+
+   // 将 packed_trx sha256 得到
+   std::string dig_str = "bb4624cb465c50781881d6d02d6ced0e86ce54ef6a27aa91cf1c83d3d2bd105e";
+   fc::sha256 digest = fc::sha256(dig_str);
+
+   std::string sig_str = "SIG_K1_KYKqMLHCLaTMmCiFJgsC64QofQGXGHPmjN22KdrzcviJKx7Wpe99iTkjFogMmkV32NK3YZb48Wa9boTf89cLAyU6TRkwHn";
+   fc::crypto::signature s = fc::crypto::signature(sig_str);
+
+   // 验证给定的三个公钥。
+   std::string pk1_str = "EOS76uhYubZJRqNvFy6tqMMNGj1dz1w8CKpWzR9vD15nuYoXdqyt2";
+   fc::crypto::public_key p1 = fc::crypto::public_key(pk1_str);
+   std::string pk2_str = "EOS8Jz9LtfbR22mFqVsWkgV8t7b1APsqjz42g9bgmLQXXkaofpGBU";
+   fc::crypto::public_key p2 = fc::crypto::public_key(pk2_str);
+   std::string pk3_str = "EOS6k8jz6wJFsTToWjebR9dojwEhUKgxMXtoLnbgs6Dj3Ww3DZEov";
+   fc::crypto::public_key p3 = fc::crypto::public_key(pk3_str);
+
+   auto check = fc::crypto::public_key( s, digest, false );
+   // 输出计算到的pk
+   std::cout << check << std::endl;
+   EOS_ASSERT( check == p1 || check == p2 ||check == p3 , crypto_api_exception, "Error expected key different than recovered key" );
+   return check == p1 || check == p2 ||check == p3;
+}
+
 fc::variant push_transaction( signed_transaction& trx, packed_transaction::compression_type compression = packed_transaction::none ) {
    auto info = get_info();
 
@@ -3326,6 +3350,13 @@ int main( int argc, char** argv ) {
       } else {
          std::cout << fc::json::to_pretty_string(trx) << std::endl;
       }
+   });
+   // verify subcommand
+
+   auto verify = app.add_subcommand("verify", localized("Verify a transaction"), false);
+
+   verify->set_callback([&] {
+      verify_signature2();
    });
 
    // Push subcommand
